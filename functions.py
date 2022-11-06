@@ -96,11 +96,15 @@ def storkey_weights(patterns):
     # maybe don't need the mu and you can do with when you do the steps
     H = np.zeros((N,N))
     for mu in range(M):
+        print('mu =', mu)
         for i in range(N):
             for j in range(N):
                 for k in range(N):
+                    """""
                     if k != i and k != j:
                         H[i][j] += W_previous[i][k]*patterns[mu][k]
+                    """
+                    H = np.matmul(W_previous, patterns[mu].T)
                 W[i][j] = W_previous[i][j] + (1/N)*(patterns[mu][i]*patterns[mu][j] - patterns[mu][i]*H[j][i] - patterns[mu][j]*H[i][j])
         W_previous = W
     return W
