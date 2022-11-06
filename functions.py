@@ -88,4 +88,21 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
  
     return states_list
 
-#def storkey_weights(patterns):
+def storkey_weights(patterns):
+    N = np.size(patterns[0])
+    M = np.shape(patterns)[0]
+    W = np.zeros((N,N))
+    W_previous = np.zeros((N,N))
+    # maybe don't need the mu and you can do with when you do the steps
+    H = np.zeros((N,N))
+    for mu in range(M):
+        for i in range(N):
+            for j in range(N):
+                for k in range(N):
+                    if k != i and k != j:
+                        H[i][j] += W_previous[i][k]*patterns[mu][k]
+                W[i][j] = W_previous[i][j] + (1/N)*(patterns[mu][i]*patterns[mu][j] - patterns[mu][i]*H[j][i] - patterns[mu][j]*H[i][j])
+        W_previous = W
+    return W
+
+
