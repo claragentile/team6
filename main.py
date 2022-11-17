@@ -1,16 +1,22 @@
 import main_functions as f
 import numpy as np
+import cProfile
 
+print('hello')
 # test dynamics-----------------------------------------------------------------
-patterns = f.generate_patterns(80,1000)
+#patterns = f.generate_patterns(80,1000)
 
-f.test_main(patterns,200,'dynamics','hebbian',20,0)
+#profiled = "f.test_main(patterns,200,'dynamics','hebbian',20,0)"
+#cProfile.run(profiled,sort="cumtime")
+
+
+#f.test_main(patterns,200,'dynamics','hebbian',20,0)
 
 # test dynamics_async-----------------------------------------------------------------
 
-patterns = f.generate_patterns(80,1000) 
+#patterns = f.generate_patterns(80,1000) 
 
-f.test_main(patterns,200,'dynamics_async','hebbian',20000,3000)
+#f.test_main(patterns,200,'dynamics_async','hebbian',20000,3000)
 
 #test of storkey dynamics -------------------------------------------------------------------------------------------------------
 

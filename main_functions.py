@@ -88,12 +88,17 @@ def perturb_pattern(pattern, num_perturb):
     ?????????
     """
     i = 0
+    random_position = np.zeros(pattern.shape[0])
     while i <= num_perturb:
         position = np.random.randint(0,np.size(pattern))
+        while random_position[position] != 0 :
+            position = np.random.randint(0,np.size(pattern))
         if pattern[position] == 1:
             pattern[position]=-1
+            random_position[position] = -1
         else :
             pattern[position]=1
+            random_position[position] = 1
         i+=1
     return pattern
 
@@ -193,13 +198,17 @@ def dynamics(state, weights, max_iter):
     a list of the historic states.
     """
     previous_state = state.copy()
-    states_list = previous_state
+    #states_list = previous_state
+    states_list = np.zeros([max_iter,state.shape[0]])
+    states_list[0] = previous_state.copy()
     for i in range(max_iter):
         new_state = update(previous_state,weights)
-        states_list = np.vstack([states_list,new_state])
+        states_list[i+1]=new_state.copy()
+        #states_list = np.vstack([states_list,new_state])
         if (new_state == previous_state).all() :
             break
         previous_state = new_state
+    states_list = states_list[0:i+2]
     return states_list
 
 def dynamics_async(state, weights, max_iter, convergence_num_iter):
@@ -220,19 +229,23 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
     ------------------------------------------------------------------
     a list of the historic states.
     """
-    iter = 0
-    states_list = state.copy()
+    conv_iter = 0
+    #states_list = state.copy()
+    states_list = np.zeros([max_iter,state.shape[0]])
+    states_list[0] = state.copy()
     previous_state = state.copy()
     for i in range(max_iter):
         new_state = update_async(previous_state,weights)
-        states_list = np.vstack([states_list,new_state])
+        #states_list = np.vstack([states_list,new_state])
+        states_list[i+1] = new_state.copy()
         if(new_state == previous_state).all() :
-            iter += 1
-            if(iter == convergence_num_iter) :
+            conv_iter += 1
+            if(conv_iter == convergence_num_iter) :
                 break
         else :
-            iter = 0
+            conv_iter = 0
             previous_state = new_state
+    states_list = states_list[0:i+2]
     return states_list
 
 
