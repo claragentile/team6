@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
+import os 
 
 def test_main(patterns, nbr_perturb, function, matrix, max_iter, convergence_iter) :
     """
@@ -21,22 +22,22 @@ def test_main(patterns, nbr_perturb, function, matrix, max_iter, convergence_ite
     answer = 0 
     for i in range(np.size(patterns,0)):
         P_perturbed = perturb_pattern(patterns[i],nbr_perturb)
-        if function == 'dynamics' and matrix == 'hebbian' :
-            P_iter = dynamics(P_perturbed, hebbian_weights(patterns),max_iter)
-        elif function == 'dynamics_async' and matrix == 'hebbian' :
-            P_iter = dynamics_async(P_perturbed, hebbian_weights(patterns),max_iter,convergence_iter)
-        elif function == 'dynamics' and matrix == 'storkey' :
-            P_iter = dynamics(P_perturbed, storkey_weights(patterns),max_iter)
-        elif function == 'dynamics_async' and matrix == 'hebbian' :
-            P_iter = dynamics_async(P_perturbed, storkey_weights(patterns),max_iter,convergence_iter)
+        if function == 'dynamics' :
+            P_iter = dynamics(P_perturbed, matrix,max_iter)
+        elif function == 'dynamics_async' :
+            P_iter = dynamics_async(P_perturbed, matrix,max_iter,convergence_iter)
         else :
             print('you called the function wrong')
-        if (P_iter[-1][:] != patterns[i]).any():
+        pattern_converged = P_iter[-1]
+        if pattern_match(patterns,pattern_converged) == None :
             answer += 1
+
+       # if (P_iter[-1][:] != patterns[i]).any():
+        #    answer += 1
     if answer != 0:
-        print('the test of',function,'with', matrix ,'weights have', answer, 'differences')
+        print('the test of',function,'have', answer, 'differences')
     elif answer == 0:
-        print('the test of',function, 'with',matrix ,'weights passed, there are 0 differences')
+        print('the test of',function, ' passed, there are 0 differences')
 
 
 def generate_patterns(num_patterns, pattern_size): #M,N
@@ -88,19 +89,20 @@ def perturb_pattern(pattern, num_perturb):
     ?????????
     """
     i = 0
-    random_position = np.zeros(pattern.shape[0])
+    pattern_changed = pattern.copy()
+    random_position = np.zeros(pattern_changed.shape[0])
     while i <= num_perturb:
         position = np.random.randint(0,np.size(pattern))
         while random_position[position] != 0 :
             position = np.random.randint(0,np.size(pattern))
-        if pattern[position] == 1:
-            pattern[position]=-1
+        if pattern_changed[position] == 1:
+            pattern_changed[position]=-1
             random_position[position] = -1
         else :
-            pattern[position]=1
+            pattern_changed[position]=1
             random_position[position] = 1
         i+=1
-    return pattern
+    return pattern_changed
 
 def pattern_match(memorized_patterns, pattern):
     """
@@ -134,6 +136,10 @@ def hebbian_weights(patterns):
     """
     weights_matrix= (1/np.shape(patterns)[0])*(np.matmul(np.transpose(patterns),patterns))-np.identity(np.shape(patterns)[1])
     return weights_matrix
+
+
+
+
  
 
 def update(state, weights):
@@ -150,12 +156,33 @@ def update(state, weights):
     The new state of the network.
     """
     #state is a pattern
-    new_state = np.dot(weights,state)
+    new_state = np.dot(weights,state.copy())
+    #new_state = np.dot(weights,np.dot(weights,state.copy()))
+    #print('shape of new_state', np.size(new_state))
+    #print(new_state[0])
     for i in range(np.size(new_state)):
         if new_state[i] >= 0:
             new_state[i] = 1
+            #print('new_state[',i,']', new_state[i])
         else :
             new_state[i] = -1
+            #print('new_state[',i,']', new_state[i])
+    #print('new_state before ==')
+    #print(new_state)
+    #marche = []
+    #pas_marche = []
+    #if(state == new_state).all() :
+        #print('state')
+        #print(state)
+        #print('new_state after ==')
+        #print(new_state)
+        #print('tas merdé')
+        #pas_marche.append(0)
+    #else:
+        #print('ca a marche')
+        #marche.append(0)
+    #print('marche', np.size(marche))
+    #print('pas marche', np.size(pas_marche))
     return new_state
  
 def update_async(state, weights):
@@ -199,10 +226,12 @@ def dynamics(state, weights, max_iter):
     """
     previous_state = state.copy()
     #states_list = previous_state
-    states_list = np.zeros([max_iter,state.shape[0]])
-    states_list[0] = previous_state.copy()
+    #print(previous_state)
+    states_list = np.zeros((max_iter+1,state.shape[0]))
+    states_list[0] = previous_state
     for i in range(max_iter):
         new_state = update(previous_state,weights)
+        #print(new_state)
         states_list[i+1]=new_state.copy()
         #states_list = np.vstack([states_list,new_state])
         if (new_state == previous_state).all() :
@@ -231,7 +260,7 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
     """
     conv_iter = 0
     #states_list = state.copy()
-    states_list = np.zeros([max_iter,state.shape[0]])
+    states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
     states_list[0] = state.copy()
     previous_state = state.copy()
     for i in range(max_iter):
@@ -287,21 +316,253 @@ def storkey_weights(patterns):
     W_previous = np.zeros((N,N))
     H = np.zeros((N,N))
     for mu in range(M):
-        print('mu', mu)
-        W_previous_wo_diag = W_previous.copy()
-        np.fill_diagonal(W_previous_wo_diag, 0)
-        p_matrix = np.tile(patterns[mu],(N,1)).T
-        p_matrix_wo_diag = p_matrix.copy()
-        np.fill_diagonal(p_matrix_wo_diag, 0)
-        p_matrix_diag = np.diag(np.diag(patterns[mu]))
-        H = np.matmul(W_previous_wo_diag, p_matrix_diag)
-        pxp_diag = np.matmul(p_matrix, p_matrix_diag)
-        Hxp_diag = np.matmul(H, p_matrix_diag)
-        W = W_previous + (1/N)*(pxp_diag - (Hxp_diag + Hxp_diag.T))
+        patterns_matrix = np.tile(patterns[mu],(N,1)).T
+        patterns_matrix_wo_diagonal = patterns_matrix.copy()
+        np.fill_diagonal(patterns_matrix_wo_diagonal, 0)
+        W_prev_diag = W_previous.copy()
+        np.fill_diagonal(W_prev_diag, 0)
+        patterns_matrix_diag = np.diag(np.diag(patterns_matrix))
+        H = np.matmul(W_prev_diag, patterns_matrix_wo_diagonal)
+        
+        H_x_diag_patterns = np.matmul(H.copy(), patterns_matrix_diag)
+        patterns_matrix_x_p_diag = np.matmul(patterns_matrix, patterns_matrix_diag)
+        W = W_previous + (1/N)*(patterns_matrix_x_p_diag - (H_x_diag_patterns + H_x_diag_patterns.T))
         W_previous = W.copy()
-
+    
     return W
 
+def energy(state, weights):
+    """
+    this function calculate the energy of a given state with a formula that uses the weights matrix
+    
+    Parameters
+    ----------
+    state : array
+            the state of a pattern in the network
+    weights : array
+            the weights matrix calculate either with the hebbian rule or the storkey rule
+    
+    Return
+    ------
+    float
+        the value of the energy
+    """
+    E= -0.5 * np.dot(state, np.dot(weights,state))
+    return E
+ 
+def hebbian_plot_energy_time(network_state_list, weights):
+    """ 
+    it plots the graph of energy for a list of network state
+    Parameters
+    ----------
+    network_state_list : array
+        all the state of the network
+    weights: array
+        the weights matrix calculate either with the hebbian rule 
+    Return
+    ------
+    none
+    """
+    #E_values = np.array([])
+    E_values = np.zeros(len(network_state_list))
+    x = np.arange(0,len(network_state_list))
 
+   
+    for i in range(len(network_state_list)):
+        E = energy(network_state_list[i], weights)
+        #E_values = np.append(E_values, E)
+        print(E)
+        E_values[i] = E
+        print(E_values)
+    
+    plt.plot(x, E_values,'g')
+    plt.title("time-energy plot for hebbian weights: ")
+    plt.ylabel('energy')
+    plt.xlabel('time')
+    plt.savefig("HebbianEnergy.png")
+    plt.show()
+ 
+
+def storkey_plot_energy_time(network_state_list, weights):
+
+    """ 
+    it plots the graph of energy for a list of network state
+    Parameters
+    ----------
+    network_state_list : array
+        all the state of the network
+    weights: array
+        the weights matrix calculate either with the storkey rule 
+    Return
+    ------
+    none
+    """
+    E_values = np.array([])
+    x = np.arange(0,len(network_state_list))
+    
+    for i in range(0,len(network_state_list)):
+        E = energy(network_state_list[i], weights)
+        E_values = np.append(E_values, E)
+
+    plt.plot(x,E_values,'b')
+    plt.ylabel('energy')
+    plt.xlabel('time')
+    plt.title("time-energy plot for storkey weights: ")
+    plt.savefig("StorkeyEnergy.png")
+    plt.show()
+
+
+def generate_checkerboard_matrix(checkerboard_dimension): 
+
+    """
+    it generate the matrix of 1 and -1 in which 5x5 sub-matrices of -1 or 1 are alternated
+    Parameters
+    ----------
+    checkerboard_dimension : int
+        dimension of the matrix obatained
+    Return
+    -------------
+    array
+        the matrix which look like a checkerboard
+    Notes
+    -----
+    checkerboard_dimension must be a multiple of 5
+    """
+    white = np.ones((5,5))
+    black = np.ones((5,5)) * -1
+ 
+        #create a lign white, black...
+    lign_wb = white
+    i=2
+    while i<=int(checkerboard_dimension/5):
+        if i%2 ==0:
+            lign_wb= np.append(lign_wb, black,axis=1)
+            i+=1
+        else :
+            lign_wb= np.append(lign_wb, white, axis=1)
+            i+=1
+    np.reshape(lign_wb, (5*checkerboard_dimension))        
+ 
+        #create a lign black, white...
+    lign_bw = black
+    i=2
+    while i<=int(checkerboard_dimension/5):
+        if i%2 ==0:
+            lign_bw= np.append(lign_bw, white,axis=1)
+            i+=1
+        else :
+            lign_bw= np.append(lign_bw, black,axis=1)
+            i+=1
+    np.reshape(lign_bw, (5*checkerboard_dimension))  
+ 
+        #create a checkerboard starting with a lign white, black
+    checkerboard = lign_wb
+    i=2
+    while i<=int(checkerboard_dimension/5):
+        if i%2 ==0:
+            checkerboard= np.append(checkerboard, lign_bw, axis=0)
+            i+=1
+        else :
+            checkerboard= np.append(checkerboard, lign_wb, axis=0)
+            i+=1
+    np.reshape(checkerboard, (checkerboard_dimension*checkerboard_dimension))  
+      
+    #plt.imshow(checkerboard, cmap='gray')  
+    return checkerboard
+ 
+def plot_checkerboard(checkerboard):
+
+    """ 
+    it plots the checkerboard and retrun the board of 0 and 1 associated
+    Parameters
+    ----------
+    checkerboard : array
+        a matrix of 1 and -1 in which 5x5 sub-matrices of -1 or 1 are alternated
+    Return
+    ------
+    array
+        the board of 1 and 0 alterned which results in a checkerboard
+    """
+    checkerboard_dimension= np.size(checkerboard,0)
+    board = np.zeros((checkerboard_dimension,checkerboard_dimension))
+ 
+    for i in range (0,checkerboard_dimension):  
+        for j in range(0,checkerboard_dimension):
+ 
+            if checkerboard[i][j]>0:
+                ci=int(i)
+                cj=int(j)
+                board[ci][cj]= 1  
+ 
+    plt.figure()  
+    plt.imshow(board, cmap='gray')
+    plt.savefig("checkerboard.png")
+    plt.show()
+    return board
+   
+ 
+def flatten_checkerboard(board): 
+    """ 
+    it flattens the board of O and 1 and associate to it a pattern of 1 and -1
+    Parameters
+    ----------
+    board : array
+        a matrix of 0 and 1 in which they are alternated
+    Return
+    ------
+    array
+        the pattern obtained of 1 and -1 corresponding to this flatten board
+    """
+    pattern = board.flatten()
+    for i in range(np.size(pattern)):
+        if pattern[i]==0:
+            pattern[i]=-1
+    return pattern
+ 
+def store_checkerboard(patterns, board):
+    """ 
+    it replace randomly in the matrix of patterns, the pattern associated to the board
+    Parameters
+    ----------
+    patterns : array
+        the matrix of all patterns
+    board : array
+        a matrix of 0 and 1 in which they are alternated
+    Return
+    ------
+    array
+        the matrix of all patterns where we introduce the checkerboard pattern
+    METTRE UNE VALUE ERROR !!!!!!
+    """
+    replacing_pattern = flatten_checkerboard(board)
+    position = np.random.randint(0,np.size(patterns,0)) 
+    patterns[position]= replacing_pattern
+   
+    return patterns
+ 
+def save_video(state_list, out_path): #state_list 50*50
+    """ 
+    it create and save a video as a gif, of each state, until it converges to the checkerboard
+    Parameters
+    ----------
+    state_list : array
+        the list of all states
+    out_path : array
+        the path were we want to save our video
+    Return
+    ------
+    none
+    """
+    frames=[]
+    fig=plt.figure()
+   
+    #for state in state_list:
+    for i in range(len(state_list)):
+        frames.append([plt.imshow(state_list[i], cmap='gray',animated=True)])
+        
+    anim = animation.ArtistAnimation(fig, frames, blit=True, repeat_delay=5000)
+    writer = PillowWriter(fps=30)
+    anim.save(out_path, writer=writer) 
+    plt.show()
 
 
