@@ -260,21 +260,24 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
     """
     conv_iter = 0
     #states_list = state.copy()
-    states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
-    states_list[0] = state.copy()
+    #states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
+    states_list = [state.copy()]
+
+    #states_list[0] = state.copy()
     previous_state = state.copy()
-    for i in range(max_iter):
+    for _ in range(max_iter):
         new_state = update_async(previous_state,weights)
         #states_list = np.vstack([states_list,new_state])
-        states_list[i+1] = new_state.copy()
+        #states_list[i+1] = new_state.copy()
+        states_list.append(new_state)
         if(new_state == previous_state).all() :
             conv_iter += 1
             if(conv_iter == convergence_num_iter) :
                 break
         else :
             conv_iter = 0
-            previous_state = new_state
-    states_list = states_list[0:i+2]
+        previous_state = new_state
+    #states_list = states_list[0:i+2]
     return states_list
 
 
@@ -316,6 +319,7 @@ def storkey_weights(patterns):
     W_previous = np.zeros((N,N))
     H = np.zeros((N,N))
     for mu in range(M):
+        #print('mu', mu)
         patterns_matrix = np.tile(patterns[mu],(N,1)).T
         patterns_matrix_wo_diagonal = patterns_matrix.copy()
         np.fill_diagonal(patterns_matrix_wo_diagonal, 0)
@@ -325,10 +329,10 @@ def storkey_weights(patterns):
         H = np.matmul(W_prev_diag, patterns_matrix_wo_diagonal)
         
         H_x_diag_patterns = np.matmul(H.copy(), patterns_matrix_diag)
-        patterns_matrix_x_p_diag = np.matmul(patterns_matrix, patterns_matrix_diag)
+        patterns_matrix_x_p_diag = np.outer(patterns[mu], patterns[mu])
+        #patterns_matrix_x_p_diag = np.dot(patterns_matrix, patterns_matrix_diag)
         W = W_previous + (1/N)*(patterns_matrix_x_p_diag - (H_x_diag_patterns + H_x_diag_patterns.T))
         W_previous = W.copy()
-    
     return W
 
 def energy(state, weights):
@@ -564,5 +568,4 @@ def save_video(state_list, out_path): #state_list 50*50
     writer = PillowWriter(fps=30)
     anim.save(out_path, writer=writer) 
     plt.show()
-
 

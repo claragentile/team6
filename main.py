@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os 
 import cProfile
-"""
+
 # test dynamics-----------------------------------------------------------------
 patterns = f.generate_patterns(80,1000)
 weights_hebbian = f.hebbian_weights(patterns)
@@ -81,8 +81,8 @@ checkerboard_index = f.pattern_match(new_patterns, f.flatten_checkerboard(board)
 
 checkerboard_perturbed = f.perturb_pattern(new_patterns[checkerboard_index], 1000)
 
-state_list_sync = f.dynamics(checkerboard_perturbed, f.hebbian_weights(patterns),20)
-#state_list_async = f.dynamics_async(checkerboard_perturbed, f.hebbian_weights(patterns), 30000, 10000) #store every 1000??
+#state_list_sync = f.dynamics(checkerboard_perturbed, f.hebbian_weights(patterns),20)
+state_list_sync = f.dynamics_async(checkerboard_perturbed, f.hebbian_weights(patterns), 30000, 10000) #store every 1000??
 
 new_shape_list=([])
 for i in range(len(state_list_sync)):
@@ -91,3 +91,4 @@ for i in range(len(state_list_sync)):
 
 out_path_sync = os.path.join("C:\\Users\\33645\\Desktop\\prog\\projet\\BIO-210-22-team-6" , "video_sync.gif")
 f.save_video(new_shape_list, out_path_sync)
+"""
