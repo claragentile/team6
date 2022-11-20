@@ -3,14 +3,18 @@ import functions as f
 import doctest
 import random
 import os
+import pytest
+import sys
+
+
+
 
 def test_functions_doctest():
     #testing that the examples in the docstrings are correct------------------------------------------------------------------------------------------------------------------------------------------------------------
     assert doctest.testmod(f, raise_on_error=True)
 
 def test_generate_checkerboard():
-    dimension = np.random.randint(1,4)
-    dimension = dimension *5 
+    dimension = 5 
     checkerboard= f.generate_checkerboard(dimension)
 
     #testing that the dimension of the checkerboard is a multiple of 5-------------------------------------------------------------------------------------------------------------------------------------------------
@@ -24,6 +28,8 @@ def test_generate_checkerboard():
         for j in range(np.size(checkerboard,1)):
             assert (checkerboard[i][j] == -1 or 1 )
 
+    assert np.allclose(f.generate_checkerboard(5), np.array([[1., 1., 1., 1., 1.],[1., 1., 1., 1., 1.],[1., 1., 1., 1., 1.],[1., 1., 1., 1., 1.],[1., 1., 1., 1., 1.]]))
+
 
 def test_flatten_checkerboard():
     dimension = np.random.randint(1,4)
@@ -31,7 +37,7 @@ def test_flatten_checkerboard():
     pattern = f.flatten_checkerboard(f.generate_checkerboard(dimension))
 
     #testing if the checkerboard patten has the dimension of a flattened pattern ----------------------------------------------------------------------------------------------------------------------------------------------------
-    assert ((np.size(pattern,0) )== 1) and ((np.size(pattern,1)) == dimension*dimension)
+    assert ((np.size(pattern,0) )== dimension*dimension)
 
     #testing if every element of the pattern is 1 or -1 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     for i in range(len(pattern)):
@@ -53,7 +59,7 @@ def test_store_checkerboard():
     assert (f.pattern_match(patterns, f.flatten_checkerboard(checkerboard)) != 0)
 
 
-def test_conergence():
+def test_convergence():
     
     patterns = f.generate_patterns(50,2500)
     checkerboard = f.generate_checkerboard(50)
@@ -70,20 +76,19 @@ def test_conergence():
 
     #synchronous rule and hebbian weights
     state_list_1 = f.dynamics(checkerboard_perturbed, f.hebbian_weights(patterns),20)
-    assert (state_list_1[0]!= flattened_checkerboard) and (state_list_1[-1]== flattened_checkerboard)
+    assert (state_list_1[0]!= flattened_checkerboard).any() and (state_list_1[-1]== flattened_checkerboard).all()
 
     #asynchronous rule and hebbian weights
     state_list_2 = f.dynamics_async(checkerboard_perturbed, f.hebbian_weights(patterns),30000,10000)
-    assert (state_list_2[0]!= flattened_checkerboard) and (state_list_2[-1]== flattened_checkerboard)
+    assert (state_list_2[0]!= flattened_checkerboard).any() and (state_list_2[-1]== flattened_checkerboard).all()
 
     #synchronous rule and storkey weights
     state_list_3 = f.dynamics(checkerboard_perturbed, f.storkey_weights(patterns),20)
-    assert (state_list_2[0]!= flattened_checkerboard) and (state_list_3[-1]== flattened_checkerboard)
+    assert (state_list_2[0]!= flattened_checkerboard).any() and (state_list_3[-1]== flattened_checkerboard).all()
 
     #asynchronous rule and storkey weights
     state_list_4 = f.dynamics_async(checkerboard_perturbed, f.storkey_weights(patterns), 30000, 10000) 
-    assert (state_list_2[0]!= flattened_checkerboard) and (state_list_4[-1]== flattened_checkerboard)
-
+    assert (state_list_2[0]!= flattened_checkerboard).any() and (state_list_4[-1]== flattened_checkerboard).all()
 
 
 def test_save_video():
@@ -102,7 +107,7 @@ def test_save_video():
     os.path.exists(out_path)
     
 
-    
+
     
 
 

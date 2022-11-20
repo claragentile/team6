@@ -466,6 +466,10 @@ def generate_checkerboard(checkerboard_dimension):
 
     
     """
+    if checkerboard_dimension <= 0 or checkerboard_dimension%5 !=0 or type(checkerboard_dimension)!=int :
+        raise TypeError("Only positive integers are allowed, which must be a multiple of 5")
+
+
     white = np.ones((5,5))
     black = np.ones((5,5)) * -1
  
