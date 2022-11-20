@@ -39,7 +39,6 @@ def test_main(patterns, nbr_perturb, function, matrix, max_iter, convergence_ite
     elif answer == 0:
         print('the test of',function, ' passed, there are 0 differences')
 
-
 def generate_patterns(num_patterns, pattern_size): #M,N
     """
     It generates a matrix of random patterns, where each pattern is a row of the matrix. 
@@ -131,11 +130,6 @@ def hebbian_weights(patterns):
     weights_matrix= (1/np.shape(patterns)[0])*(np.matmul(np.transpose(patterns),patterns))-np.identity(np.shape(patterns)[1])
     return weights_matrix
 
-
-
-
- 
-
 def update(state, weights):
     """
     The function takes a state and a weight matrix as input, and returns the updated state
@@ -193,13 +187,19 @@ def update_async(state, weights):
     """
     new_state = state.copy()
     position = np.random.randint(0,np.size(state))
-    w_row = weights[position]
-    new_value = np.dot(w_row,new_state)
+    w_row = weights[position].copy()
+    if np.inner(w_row, new_state) >= 0:
+        new_state[position] = 1 
+    else :
+        new_state[position]= -1
+    """
+    new_value = np.inner(w_row,new_state) #on a mis np.inner hier avec toi mais a la base c'etait np.dot
     if new_value >= 0:
             new_value = 1
     else :
         new_value = -1
     new_state[position] = new_value
+    """
     return new_state
 
 def dynamics(state, weights, max_iter):
@@ -251,24 +251,23 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
     """
     conv_iter = 0
     #states_list = state.copy()
-    states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
-    states_list[0] = state.copy()
+    #states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
+    states_list=[state.copy()]
     previous_state = state.copy()
     for i in range(max_iter):
         new_state = update_async(previous_state,weights)
         #states_list = np.vstack([states_list,new_state])
-        states_list[i+1] = new_state.copy()
+        #states_list[i+1] = new_state.copy()
+        states_list.append(new_state)
         if(new_state == previous_state).all() :
             conv_iter += 1
             if(conv_iter == convergence_num_iter) :
                 break
         else :
             conv_iter = 0
-            previous_state = new_state
-    states_list = states_list[0:i+2]
+        previous_state = new_state #on a enlevé un tab ici 
+    #states_list = states_list[0:i+2]
     return states_list
-
-
 
 def storkey_weights(patterns):
     """"
@@ -281,26 +280,22 @@ def storkey_weights(patterns):
     Returns
     -----------------
     the weight matrix
-
     Notes
     -----------------
     the patterns matrix has to be a matrix of -1 or 1, otherwise 
     you will not get the right matrix
-
     Examples
     -----------------
-    >>> storkey_weights(np.array([[-1,1,-1], [1,1,-1]]))
+    storkey_weights(np.array([[-1,1,-1], [1,1,-1]]))
     [[0.22222222 0.44444444 0.44444444]
     [0.44444444 0.22222222 0.44444444]
     [0.44444444 0.44444444 0.22222222]]
-
-    >>> storkey_weights(np.array([[-1,1,-1,1,1], [1,1,-1,-1,1], [-1,-1,-1,1,-1]]))
+    storkey_weights(np.array([[-1,1,-1,1,1], [1,1,-1,-1,1], [-1,-1,-1,1,-1]]))
     [[0.024 0.168 0.168 0.168 0.168]
     [0.168 0.024 0.168 0.168 0.168]
     [0.168 0.168 0.024 0.168 0.168]
     [0.168 0.168 0.168 0.024 0.168]
     [0.168 0.168 0.168 0.168 0.024]]
-
     """
     N = np.size(patterns[0])
     M = np.shape(patterns)[0]
@@ -324,7 +319,6 @@ def storkey_weights(patterns):
         W_previous = W.copy()
     
     return W
-    
 
 def energy(state, weights):
     """
@@ -362,13 +356,11 @@ def hebbian_plot_energy_time(network_state_list, weights):
     E_values = np.zeros(len(network_state_list))
     x = np.arange(0,len(network_state_list))
 
-   
+
     for i in range(len(network_state_list)):
         E = energy(network_state_list[i], weights)
         #E_values = np.append(E_values, E)
-        print(E)
         E_values[i] = E
-        print(E_values)
     
     plt.plot(x, E_values,'g')
     plt.title("time-energy plot for hebbian weights: ")
@@ -377,7 +369,6 @@ def hebbian_plot_energy_time(network_state_list, weights):
     plt.savefig("HebbianEnergy.png")
     plt.show()
  
-
 def storkey_plot_energy_time(network_state_list, weights):
 
     """ 
@@ -406,22 +397,74 @@ def storkey_plot_energy_time(network_state_list, weights):
     plt.savefig("StorkeyEnergy.png")
     plt.show()
 
-
-def generate_checkerboard_matrix(checkerboard_dimension): 
+def generate_checkerboard(checkerboard_dimension): 
 
     """
     it generate the matrix of 1 and -1 in which 5x5 sub-matrices of -1 or 1 are alternated
+    and it plots it and save the figure
+
     Parameters
     ----------
     checkerboard_dimension : int
-        dimension of the matrix obatained
+        dimension of the matrix obtained
+
     Return
-    -------------
+    ------
     array
         the matrix which look like a checkerboard
+
     Notes
     -----
-    checkerboard_dimension must be a multiple of 5
+    checkerboard_dimension MUST be a multiple of 5
+
+    Examples
+    --------
+    >>> generate_checkerboard(10)
+    array([[ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1.]])
+
+    >>> generate_checkerboard(15)
+    array([[ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1., -1., -1., -1.,
+            -1., -1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1., -1., -1., -1.,
+            -1., -1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1., -1., -1., -1.,
+            -1., -1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1., -1., -1., -1.,
+            -1., -1.],
+           [-1., -1., -1., -1., -1.,  1.,  1.,  1.,  1.,  1., -1., -1., -1.,
+            -1., -1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.],
+           [ 1.,  1.,  1.,  1.,  1., -1., -1., -1., -1., -1.,  1.,  1.,  1.,
+             1.,  1.]])
+   
+
+    
     """
     white = np.ones((5,5))
     black = np.ones((5,5)) * -1
@@ -462,100 +505,136 @@ def generate_checkerboard_matrix(checkerboard_dimension):
             i+=1
     np.reshape(checkerboard, (checkerboard_dimension*checkerboard_dimension))  
       
-    #plt.imshow(checkerboard, cmap='gray')  
-    return checkerboard
- 
-def plot_checkerboard(checkerboard):
+    plt.figure()  
+    plt.imshow(checkerboard, cmap='gray')
+    plt.savefig("checkerboard.png")
+    plt.show()
 
+    return checkerboard
+
+def flatten_checkerboard(checkerboard): 
     """ 
-    it plots the checkerboard and retrun the board of 0 and 1 associated
+    it flattens the checkerboard matrix of 1 and -1 to put it in only one line.
+
     Parameters
     ----------
     checkerboard : array
-        a matrix of 1 and -1 in which 5x5 sub-matrices of -1 or 1 are alternated
+        a matrix of 1 and -1 
+
     Return
     ------
     array
-        the board of 1 and 0 alterned which results in a checkerboard
+        the pattern obtained of 1 and -1 corresponding to this flatten checkerboard
+
+
+    Examples
+    --------
+
+    >>> flatten_checkerboard(np.array([[-1,  1, -1,  1],[1, -1,  1, -1], [-1,  1, -1,  1]]))
+    array([-1,  1, -1,  1,  1, -1,  1, -1, -1,  1, -1,  1])
+
+    >>> flatten_checkerboard(np.array([[-1,1,-1,1],[1,-1,1,-1],[-1,1,-1,1], [1,-1,1,-1]]))
+    array([-1,  1, -1,  1,  1, -1,  1, -1, -1,  1, -1,  1,  1, -1,  1, -1])
     """
-    checkerboard_dimension= np.size(checkerboard,0)
-    board = np.zeros((checkerboard_dimension,checkerboard_dimension))
- 
-    for i in range (0,checkerboard_dimension):  
-        for j in range(0,checkerboard_dimension):
- 
-            if checkerboard[i][j]>0:
-                ci=int(i)
-                cj=int(j)
-                board[ci][cj]= 1  
- 
-    plt.figure()  
-    plt.imshow(board, cmap='gray')
-    plt.savefig("checkerboard.png")
-    plt.show()
-    return board
-   
- 
-def flatten_checkerboard(board): 
-    """ 
-    it flattens the board of O and 1 and associate to it a pattern of 1 and -1
-    Parameters
-    ----------
-    board : array
-        a matrix of 0 and 1 in which they are alternated
-    Return
-    ------
-    array
-        the pattern obtained of 1 and -1 corresponding to this flatten board
-    """
-    pattern = board.flatten()
-    for i in range(np.size(pattern)):
-        if pattern[i]==0:
-            pattern[i]=-1
+    pattern = checkerboard.flatten()
+
     return pattern
  
-def store_checkerboard(patterns, board):
+def store_checkerboard(patterns, checkerboard):
     """ 
-    it replace randomly in the matrix of patterns, the pattern associated to the board
+    it replaces randomly the pattern associated to the checkerboard in the matrix of patterns, after flattening it 
+
     Parameters
     ----------
     patterns : array
         the matrix of all patterns
-    board : array
-        a matrix of 0 and 1 in which they are alternated
+    checkerboard : array
+        a matrix of 1 and -1
+
     Return
     ------
     array
-        the matrix of all patterns where we introduce the checkerboard pattern
-    METTRE UNE VALUE ERROR !!!!!!
+        the matrix of all patterns where we introduce the checkerboard pattern in a random position
+
+    Notes
+    -----
+    the number of columns in patterns must be equal to the number of ligns in checkerboard multiplied by the number of columns in checkerboard
+
+    Examples
+    --------
+
+    >>> store_checkerboard(np.array([[1,1,-1,-1]]), np.array([-1,1,-1,1]))
+    array([[-1,  1, -1,  1]])
+
     """
-    replacing_pattern = flatten_checkerboard(board)
+    replacing_pattern = flatten_checkerboard(checkerboard)
     position = np.random.randint(0,np.size(patterns,0)) 
     patterns[position]= replacing_pattern
    
     return patterns
  
-def save_video(state_list, out_path): #state_list 50*50
+def reshape_states(state_list):
+    """
+    it reshapes every state of the list into an array of shape 50x50
+
+    Parameters
+    ----------
+    state_list: array
+        the list of each state of the system until convergence, state are arrays of 1 or -1
+
+    Return
+    ------
+    array 
+        the list with reshaped states of size 50x50
+
+    Examples
+    -------
+    >>> np.shape(reshape_states(generate_patterns(2,2500)))
+    (2, 50, 50)
+
+    Note
+    ----
+    this function doesn't return the shape of new_shape_list, it retruns new_shape_list. But the smallest size of this list is (1,2500) 
+    it is not possible to add an array of this size in the examples.
+    This is why i find relevant to show the size of new_shape_list as an example
+
+    """
+    new_shape_list=([])
+    for i in range(len(state_list)):
+        state_list_sync_new_shape = state_list[i].reshape((50,50))
+        new_shape_list.append(state_list_sync_new_shape) 
+
+    return new_shape_list
+
+def save_video(state_list, out_path): 
     """ 
-    it create and save a video as a gif, of each state, until it converges to the checkerboard
+    it creates and save a video as a gif, by creating a board for each state of the list state_list
+
     Parameters
     ----------
     state_list : array
         the list of all states
     out_path : array
         the path were we want to save our video
+
     Return
     ------
-    none
+    None
+
+    Notes
+    -----
+    The video should converge to the pattern of a checkerboard, this depends on the list of states
     """
     frames=[]
     fig=plt.figure()
    
-    #for state in state_list:
     for i in range(len(state_list)):
         frames.append([plt.imshow(state_list[i], cmap='gray',animated=True)])
         
     anim = animation.ArtistAnimation(fig, frames, blit=True, repeat_delay=5000)
-    writer = PillowWriter(fps=30)
+    writer = PillowWriter(fps=5)
     anim.save(out_path, writer=writer) 
     plt.show()
+
+
+
