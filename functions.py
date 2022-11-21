@@ -4,7 +4,9 @@ import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
 import os 
 
-def test_main(patterns, nbr_perturb, function, matrix, max_iter, convergence_iter) :
+
+
+def main(patterns, nbr_perturb, function, matrix, max_iter, convergence_iter) :
     """
     It takes in a set of patterns, a number of perturbations, a function, a matrix, a maximum number of
     iterations, and a convergence iteration, and then it tests the function with the matrix to see if the patterns have converged to the original pattern 
@@ -27,17 +29,16 @@ def test_main(patterns, nbr_perturb, function, matrix, max_iter, convergence_ite
         elif function == 'dynamics_async' :
             P_iter = dynamics_async(P_perturbed, matrix,max_iter,convergence_iter)
         else :
-            print('you called the function wrong')
+            print('the parameter "function" can only be "dynamics" or "dynamics_asyn" -> pay attention to spelling ')
         pattern_converged = P_iter[-1]
         if pattern_match(patterns,pattern_converged) == None :
             answer += 1
 
-       # if (P_iter[-1][:] != patterns[i]).any():
-        #    answer += 1
     if answer != 0:
         print('the test of',function,'have', answer, 'differences')
     elif answer == 0:
         print('the test of',function, ' passed, there are 0 differences')
+
 
 def generate_patterns(num_patterns, pattern_size): #M,N
     """
@@ -52,18 +53,25 @@ def generate_patterns(num_patterns, pattern_size): #M,N
     -----------------------------------------------------------------
     num_patterns: the number of patterns to generate
     pattern_size: The number of neurons in the network
+    
     Return
     ------------------------------------------------------------------
     A matrix of size MxN, where M is the number of patterns and N is the size of each pattern.
+    
     Raises
     ------------------------------------------------------------------
     ValueError
         if an argument is negative
     
-    Notes
-    ------------------------------------------------------------------
-    ?????????
+    Examples 
+    -------------------------------------------------------------------
+    >>> (generate_patterns(1,1))*(generate_patterns(1,1))
+    array([[1]])
+
     """
+    if (num_patterns or pattern_size) < 0:
+        raise ValueError("The parameters must be positive ! ")
+
     patterns = np.random.choice([-1,1], (num_patterns,pattern_size)) 
     return patterns 
 
@@ -75,18 +83,29 @@ def perturb_pattern(pattern, num_perturb):
     -----------------------------------------------------------------
     pattern: the pattern to be perturbed
     num_perturb: number of perturbations to make to the pattern
+
     Return
     ------------------------------------------------------------------
     the number of bits that are different between the two patterns.
     
-    Notes
+    Raises
     ------------------------------------------------------------------
-    ?????????
+    ValueError
+        if an num_pattern is greater than the size of the pattern
+    
+    Examples 
+    -------------------------------------------------------------------
+    >>> perturb_pattern(np.array([1,-1,-1]),1)
+    array([1,1,-1]) or array([-1,-1,-1]) or array([1,-1,1])
+    
     """
+    if num_perturb > pattern.shape[0]:
+        raise ValueError("The number of perturbation must be smaller than the size of the pattern")
+
     i = 0
     pattern_changed = pattern.copy()
     random_position = np.zeros(pattern_changed.shape[0])
-    while i <= num_perturb:
+    while i < num_perturb:
         position = np.random.randint(0,np.size(pattern))
         while random_position[position] != 0 :
             position = np.random.randint(0,np.size(pattern))
@@ -108,9 +127,21 @@ def pattern_match(memorized_patterns, pattern):
     -----------------------------------------------------------------
     memorized_patterns: the patterns that the network has memorized
     pattern: the pattern to be matched
+
     Return
     ------------------------------------------------------------------
     The index of the pattern that matches the input pattern.
+
+    Raises
+    ------------------------------------------------------------------
+    AttributeError
+        if the number of column of the pattern is not the same as the column of the memorized_pattern
+    
+    Examples
+    ----------
+    >>> pattern_match(np.array([[1,1,-1,-1],[1,1,-1,1],[-1,1,-1,1]]),np.array([1,1,-1,1]))
+    1
+
     """
     for i in range(np.size(memorized_patterns, 0)):
         if (pattern == memorized_patterns[i]).all():
@@ -121,11 +152,21 @@ def hebbian_weights(patterns):
     The function takes in a matrix of patterns and returns a matrix of weights
     
     Parameters
-    -----------------------------------------------------------------
+    -----------
     patterns: a matrix of patterns, where each row is a pattern
+    
     Return
-    ------------------------------------------------------------------
-    The weights matrix
+    ----------
+    numpy array 
+    The weights matrix with the habbian weights
+
+    Examples
+    ----------
+    >>> hebbian_weights(np.array([[1,1,-1,-1],[1,1,-1,1],[-1,1,-1,1]]))
+    array([[ 0.        ,  0.33333333, -0.33333333, -0.33333333],
+       [ 0.33333333,  0.        , -1.        ,  0.33333333],
+       [-0.33333333, -1.        ,  0.        , -0.33333333],
+       [-0.33333333,  0.33333333, -0.33333333,  0.        ]])
     """
     weights_matrix= (1/np.shape(patterns)[0])*(np.matmul(np.transpose(patterns),patterns))-np.identity(np.shape(patterns)[1])
     return weights_matrix
@@ -143,34 +184,12 @@ def update(state, weights):
     ------------------------------------------------------------------
     The new state of the network.
     """
-    #state is a pattern
     new_state = np.dot(weights,state.copy())
-    #new_state = np.dot(weights,np.dot(weights,state.copy()))
-    #print('shape of new_state', np.size(new_state))
-    #print(new_state[0])
     for i in range(np.size(new_state)):
         if new_state[i] >= 0:
             new_state[i] = 1
-            #print('new_state[',i,']', new_state[i])
         else :
             new_state[i] = -1
-            #print('new_state[',i,']', new_state[i])
-    #print('new_state before ==')
-    #print(new_state)
-    #marche = []
-    #pas_marche = []
-    #if(state == new_state).all() :
-        #print('state')
-        #print(state)
-        #print('new_state after ==')
-        #print(new_state)
-        #print('tas merdé')
-        #pas_marche.append(0)
-    #else:
-        #print('ca a marche')
-        #marche.append(0)
-    #print('marche', np.size(marche))
-    #print('pas marche', np.size(pas_marche))
     return new_state
  
 def update_async(state, weights):
@@ -188,18 +207,12 @@ def update_async(state, weights):
     new_state = state.copy()
     position = np.random.randint(0,np.size(state))
     w_row = weights[position].copy()
-    if np.inner(w_row, new_state) >= 0:
-        new_state[position] = 1 
-    else :
-        new_state[position]= -1
-    """
     new_value = np.inner(w_row,new_state) #on a mis np.inner hier avec toi mais a la base c'etait np.dot
     if new_value >= 0:
             new_value = 1
     else :
         new_value = -1
     new_state[position] = new_value
-    """
     return new_state
 
 def dynamics(state, weights, max_iter):
@@ -217,15 +230,11 @@ def dynamics(state, weights, max_iter):
     a list of the historic states.
     """
     previous_state = state.copy()
-    #states_list = previous_state
-    #print(previous_state)
     states_list = np.zeros((max_iter+1,state.shape[0]))
     states_list[0] = previous_state
     for i in range(max_iter):
         new_state = update(previous_state,weights)
-        #print(new_state)
         states_list[i+1]=new_state.copy()
-        #states_list = np.vstack([states_list,new_state])
         if (new_state == previous_state).all() :
             break
         previous_state = new_state
@@ -250,14 +259,10 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
     a list of the historic states.
     """
     conv_iter = 0
-    #states_list = state.copy()
-    #states_list = np.zeros((max_iter*convergence_num_iter,state.shape[0]))
     states_list=[state.copy()]
     previous_state = state.copy()
     for i in range(max_iter):
         new_state = update_async(previous_state,weights)
-        #states_list = np.vstack([states_list,new_state])
-        #states_list[i+1] = new_state.copy()
         states_list.append(new_state)
         if(new_state == previous_state).all() :
             conv_iter += 1
@@ -265,12 +270,12 @@ def dynamics_async(state, weights, max_iter, convergence_num_iter):
                 break
         else :
             conv_iter = 0
-        previous_state = new_state #on a enlevé un tab ici 
-    #states_list = states_list[0:i+2]
+        previous_state = new_state 
     return states_list
 
+
 def storkey_weights(patterns):
-    """"
+    """
     Function that returns the weight matrix, with the storkey rule.
     Parameters
     -----------------
@@ -284,18 +289,11 @@ def storkey_weights(patterns):
     -----------------
     the patterns matrix has to be a matrix of -1 or 1, otherwise 
     you will not get the right matrix
+    
     Examples
     -----------------
-    storkey_weights(np.array([[-1,1,-1], [1,1,-1]]))
-    [[0.22222222 0.44444444 0.44444444]
-    [0.44444444 0.22222222 0.44444444]
-    [0.44444444 0.44444444 0.22222222]]
-    storkey_weights(np.array([[-1,1,-1,1,1], [1,1,-1,-1,1], [-1,-1,-1,1,-1]]))
-    [[0.024 0.168 0.168 0.168 0.168]
-    [0.168 0.024 0.168 0.168 0.168]
-    [0.168 0.168 0.024 0.168 0.168]
-    [0.168 0.168 0.168 0.024 0.168]
-    [0.168 0.168 0.168 0.168 0.024]]
+    >>> storkey_weights(np.array([[1,1,-1,-1], [1,1,-1,1], [-1,1,-1,1]]))
+    array([[1.125,0.25,-0.25,-0.5],[0.25,0.625,-1,0.25],[-0.25,-1,0.625,-0.25],[-0.5,0.25,-0.25,1.125]])
     """
     N = np.size(patterns[0])
     M = np.shape(patterns)[0]
@@ -303,7 +301,6 @@ def storkey_weights(patterns):
     W_previous = np.zeros((N,N))
     H = np.zeros((N,N))
     for mu in range(M):
-        #print('mu', mu)
         patterns_matrix = np.tile(patterns[mu],(N,1)).T
         patterns_matrix_wo_diagonal = patterns_matrix.copy()
         np.fill_diagonal(patterns_matrix_wo_diagonal, 0)
@@ -313,8 +310,7 @@ def storkey_weights(patterns):
         H = np.matmul(W_prev_diag, patterns_matrix_wo_diagonal)
         
         H_x_diag_patterns = np.matmul(H.copy(), patterns_matrix_diag)
-        patterns_matrix_x_p_diag = np.outer(patterns[mu], patterns[mu])
-        #patterns_matrix_x_p_diag = np.dot(patterns_matrix, patterns_matrix_diag)
+        patterns_matrix_x_p_diag = np.matmul(patterns_matrix, patterns_matrix_diag)
         W = W_previous + (1/N)*(patterns_matrix_x_p_diag - (H_x_diag_patterns + H_x_diag_patterns.T))
         W_previous = W.copy()
     
@@ -352,15 +348,14 @@ def hebbian_plot_energy_time(network_state_list, weights):
     ------
     none
     """
-    #E_values = np.array([])
     E_values = np.zeros(len(network_state_list))
     x = np.arange(0,len(network_state_list))
 
-
+   
     for i in range(len(network_state_list)):
         E = energy(network_state_list[i], weights)
-        #E_values = np.append(E_values, E)
         E_values[i] = E
+
     
     plt.plot(x, E_values,'g')
     plt.title("time-energy plot for hebbian weights: ")
@@ -369,6 +364,7 @@ def hebbian_plot_energy_time(network_state_list, weights):
     plt.savefig("HebbianEnergy.png")
     plt.show()
  
+
 def storkey_plot_energy_time(network_state_list, weights):
 
     """ 
@@ -383,12 +379,14 @@ def storkey_plot_energy_time(network_state_list, weights):
     ------
     none
     """
-    E_values = np.array([])
+    E_values = np.zeros(len(network_state_list))
     x = np.arange(0,len(network_state_list))
-    
-    for i in range(0,len(network_state_list)):
+
+   
+    for i in range(len(network_state_list)):
         E = energy(network_state_list[i], weights)
-        E_values = np.append(E_values, E)
+        E_values[i] = E
+
 
     plt.plot(x,E_values,'b')
     plt.ylabel('energy')
@@ -396,6 +394,9 @@ def storkey_plot_energy_time(network_state_list, weights):
     plt.title("time-energy plot for storkey weights: ")
     plt.savefig("StorkeyEnergy.png")
     plt.show()
+
+
+
 
 def generate_checkerboard(checkerboard_dimension): 
 
@@ -642,3 +643,68 @@ def save_video(state_list, out_path):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+""

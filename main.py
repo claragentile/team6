@@ -1,37 +1,29 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import functions as f
 import os 
-
-
 """
-# test dynamics-----------------------------------------------------------------
-#patterns = f.generate_patterns(80,1000)
+
+patterns = f.generate_patterns(80,1000)
+weights_hebbian = f.hebbian_weights(patterns)
+#weights_storkey = f.storkey_weights(patterns)
+
+# verification dynamics-----------------------------------------------------------------
 
 #profiled = "f.test_main(patterns,200,'dynamics','hebbian',20,0)"
 #cProfile.run(profiled,sort="cumtime")
+f.main(patterns,200,'dynamics',weights_hebbian,20,0)
 
+# verification dynamics_async-----------------------------------------------------------------
 
-#f.test_main(patterns,200,'dynamics','hebbian',20,0)
+f.main(patterns,200,'dynamics_async',weights_hebbian,20000,3000)
 
-# test dynamics_async-----------------------------------------------------------------
+#verification of storkey dynamics -------------------------------------------------------------------------------------------------------
+f.test_main(patterns,200,'dynamics',weights_storkey,20,0)
 
-#patterns = f.generate_patterns(80,1000) 
+#verification of storkey dynamics_async ----------------------------------------------------------------------------
+f.main(patterns,200,'dynamics_async',weights_storkey,20000,3000)
 
-#f.test_main(patterns,200,'dynamics_async','hebbian',20000,3000)
-
-#test of storkey dynamics -------------------------------------------------------------------------------------------------------
-
-patterns = f.generate_patterns(80,1000)
-
-f.test_main(patterns,200,'dynamics','storkey',20,0)
-
-#test of storkey dynamics_async -------------------------------------------------------------------------------------------------------
-
-patterns = f.generate_patterns(80,1000) 
-
-f.test_main(patterns,200,'dynamics_async','storkey',20000,3000)
 """
 
 
@@ -46,8 +38,8 @@ perturbed_pattern = f.perturb_pattern(patterns[position], 1000)
 #f.hebbian_plot_energy_time(network_state_list_h_s, f.hebbian_weights(patterns))
 
 #storkey synchronous---------------------------------------------------------------------------------------------------------------------------------------
-#network_state_list_s_s = f.dynamics(perturbed_pattern, f.storkey_weights(patterns), 20)
-#f.storkey_plot_energy_time(network_state_list_s_s, f.storkey_weights(patterns))
+network_state_list_s_s = f.dynamics(perturbed_pattern, f.storkey_weights(patterns), 20)
+f.storkey_plot_energy_time(network_state_list_s_s, f.storkey_weights(patterns))
  
 #hebbian asynchronous------------------------------------------------------------------------------------------------------------------------------------------------
 #network_state_list_h_a = f.dynamics_async(perturbed_pattern, f.hebbian_weights(patterns), 30000,10000)
