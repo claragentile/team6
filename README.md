@@ -50,7 +50,7 @@ In `test_functions.py`, `test_functions_doctest` will run the tests for doctests
 4. run pytest
 ## Example from code
 This is what the energy functions could look like:
-[HebbianEnergy.png]
+[HebbianEnergy.png](main.py/HebbianEnergy.png)
 
 
 
