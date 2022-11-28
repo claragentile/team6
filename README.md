@@ -11,7 +11,8 @@ The goal of this project is to simulate a neural network that evolves in time us
 
 `pip install numpy`
 
-There might be issues with MacOS in installing numpy, if so consult: >https://phoenixnap.com/kb/install-numpy
+There might be issues with MacOS in installing numpy, if so consult: 
+>https://phoenixnap.com/kb/install-numpy
 
 **To install matplotlib :**
 
@@ -47,6 +48,9 @@ In `test_functions.py`, `test_functions_doctest` will run the tests for doctests
 2. run `test_functions.py`
 3. run `main.py`
 4. run pytest
+## Example from code
+This is what the energy functions could look like:
+[HebbianEnergy.png]
 
 
 
